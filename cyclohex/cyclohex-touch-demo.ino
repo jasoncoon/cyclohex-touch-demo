@@ -52,7 +52,7 @@ Button button1(A9);
 // These values were discovered using the commented-out Serial.print statements in handleTouch below
 
 // minimum values for each touch pad, used to filter out noise
-uint16_t touchMin[touchPointCount] = { 792, 259, 418, 368, 368, 792 };
+uint16_t touchMin[touchPointCount] = { 834, 575, 725, 650, 601, 527 };
 
 // maximum values for each touch pad, used to determine when a pad is touched
 uint16_t touchMax[touchPointCount] = { 1016, 1016, 1016, 1016, 1016, 1016 };
@@ -81,6 +81,9 @@ CRGBPalette16 gTargetPalette( gGradientPalettes[0] );
 // ten seconds per color palette makes a good demo
 // 20-120 is better for deployment
 uint8_t secondsPerPalette = 10;
+
+uint8_t mode = 0;
+const uint8_t modeCount = 2;
 
 void setup() {
   Serial.begin(115200);
@@ -121,6 +124,8 @@ void loop() {
 
   if (button0.pressed()) {
     Serial.println("button 0 pressed");
+    if (mode < modeCount - 1) mode++;
+    else mode = 0;
   }
 
   if (button1.pressed()) {
@@ -138,10 +143,14 @@ void loop() {
     nblendPaletteTowardPalette( gCurrentPalette, gTargetPalette, 8);
   }
 
-  if (!activeWaves)
-    colorWaves();
-
-  touchDemo();
+  if (mode == 0) {
+    if (!activeWaves)
+      colorWaves();
+    touchWaves();
+  } else if (mode == 1) {
+    touchSnakes();
+    drawSnakes();
+  }
 
   // insert a delay to keep the framerate modest
   FastLED.delay(1000 / FRAMES_PER_SECOND);
@@ -159,8 +168,8 @@ void handleTouch() {
     else if (i == 5) touchRaw[i] = touch5.measure();
 
     // // uncomment to display raw touch values in the serial monitor/plotter
-    //    Serial.print(touchRaw[i]);
-    //    Serial.print(" ");
+    // Serial.print(touchRaw[i]);
+    // Serial.print(" ");
 
     if (touchRaw[i] < touchMin[i]) {
       touchMin[i] = touchRaw[i];
@@ -175,30 +184,30 @@ void handleTouch() {
     touch[i] = map(touchRaw[i], touchMin[i], touchMax[i], 0, 255);
 
     // // uncomment to display mapped/scaled touch values in the serial monitor/plotter
-    //    Serial.print(touch[i]);
-    //    Serial.print(" ");
+    // Serial.print(touch[i]);
+    // Serial.print(" ");
   }
 
   // // uncomment to display raw and/or mapped/scaled touch values in the serial monitor/plotter
-  //  Serial.println();
+  // Serial.println();
 
   // uncomment to display raw, scaled, min, max touch values in the serial monitor/plotter
-  //  if (touchChanged) {
-  //    for (uint8_t i = 0; i < touchPointCount; i++) {
-  //      Serial.print(touchRaw[i]);
-  //      Serial.print(" ");
-  //      Serial.print(touch[i]);
-  //      Serial.print(" ");
-  //      Serial.print(touchMin[i]);
-  //      Serial.print(" ");
-  //      Serial.print(touchMax[i]);
-  //      Serial.print(" ");
-  //    }
-  //
-  //    Serial.println();
-  //
-  //    touchChanged = false;
-  //  }
+  if (touchChanged) {
+    for (uint8_t i = 0; i < touchPointCount; i++) {
+    //  Serial.print(touchRaw[i]);
+    //  Serial.print(" ");
+    //  Serial.print(touch[i]);
+    //  Serial.print(" ");
+      Serial.print(touchMin[i]);
+      Serial.print(" ");
+    // Serial.print(touchMax[i]);
+    // Serial.print(" ");
+    }
+
+    Serial.println();
+
+    touchChanged = false;
+  }
 }
 
 // adds a color to a pixel given it's XY coordinates and a "thickness" of the logical pixel
@@ -271,7 +280,7 @@ CRGB waveColor[waveCount];
 
 const uint16_t maxRadius = 512;
 
-void touchDemo() {
+void touchWaves() {
   // fade all of the LEDs a small amount each frame
   // increasing this number makes the waves fade faster
   fadeToBlackBy(leds, NUM_LEDS, 30);
@@ -370,4 +379,103 @@ void fillWithColorWaves(CRGB* ledarray, uint16_t numleds, CRGBPalette16& palette
 
 void colorWaves() {
   fillWithColorWaves(leds, NUM_LEDS, gCurrentPalette);
+}
+
+const uint8_t snakeCount = 6;
+bool snakeVisible[snakeCount] = { false, true, false, false, false, true };
+uint8_t snakeDebounce[snakeCount] = { 0, 0, 0, 0, 0, 0 };
+uint8_t currentRings[snakeCount] = { 17, 15, 13, 11, 9, 7 };
+const uint8_t defaultRings[snakeCount] = { 17, 15, 13, 11, 9, 7 };
+uint8_t snakeHues[snakeCount] = { 192, 160, 128, 96, 64, 0 };
+
+void touchSnakes() {
+  for (uint8_t i = 0; i < touchPointCount; i++) {
+    if (snakeDebounce[i] > 0) snakeDebounce[i] = snakeDebounce[i] - 1;
+
+    if (touch[i] > 127 && snakeDebounce[i] == 0) {
+      snakeVisible[i] = !snakeVisible[i];
+      currentRings[i] = defaultRings[i];
+      snakeDebounce[i] = 64;
+    }
+  }
+}
+
+void drawSnakes()
+{
+  static int8_t directions[snakeCount] = { -1, 1, -1, 1, -1, 1 };
+  static int8_t currentRingPixels[snakeCount] = { 0, 0, 0, 0, 0, 0 };
+  static uint32_t lastJumpMilliss[snakeCount] = { 0, 0, 0, 0, 0, 0 };
+
+  fadeToBlackBy(leds, NUM_LEDS, 4);
+
+  bool move = false;
+
+  EVERY_N_MILLIS(30) { move = true; }
+
+  for (uint8_t snakeIndex = 0; snakeIndex < snakeCount; snakeIndex++)
+  {
+    if (!snakeVisible[snakeIndex]) continue;
+
+    uint8_t direction = directions[snakeIndex];
+    uint8_t currentRing = currentRings[snakeIndex];
+    int8_t currentRingPixel = currentRingPixels[snakeIndex];
+    uint32_t lastJumpMillis = lastJumpMilliss[snakeIndex];
+
+    uint8_t currentIndex = currentRing * 12 + currentRingPixel;
+
+    if (direction == 0) direction = 1;
+
+    if (move) {
+      bool jumped = false;
+
+      if (random8() > 128 && millis() - lastJumpMillis > 250)
+      { // jump occasionally, but not too often
+        // find jump point
+        uint8_t newIndex = NUM_LEDS;
+
+        for (uint8_t i = 0; i < 42; i++)
+        {
+          if (connections[i][0] == currentIndex)
+          {
+            newIndex = connections[i][1];
+            jumped = true;
+            break;
+          }
+          else if (connections[i][1] == currentIndex)
+          {
+            newIndex = connections[i][0];
+            jumped = true;
+            break;
+          }
+        }
+
+        if (jumped)
+        {
+          currentRing = newIndex / 12;
+          currentRingPixel = newIndex % 12;
+          lastJumpMillis = millis();
+          direction *= -1; // flip direction every jump
+        }
+      }
+
+      if (!jumped)
+      {
+        currentRingPixel += direction;
+        if (currentRingPixel > 11)
+          currentRingPixel = 0;
+        if (currentRingPixel < 0)
+          currentRingPixel = 11;
+      }
+      
+      currentIndex = currentRing * 12 + currentRingPixel;
+    }
+
+    // leds[currentIndex] += ColorFromPalette(gCurrentPalette, beat8(speed));
+    leds[currentIndex] += CHSV(snakeHues[snakeIndex], 255, 255);
+
+    directions[snakeIndex] = direction;
+    currentRings[snakeIndex] = currentRing;
+    currentRingPixels[snakeIndex] = currentRingPixel;
+    lastJumpMilliss[snakeIndex] = lastJumpMillis;
+  }
 }
