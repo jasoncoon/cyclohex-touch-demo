@@ -33,9 +33,12 @@ FASTLED_USING_NAMESPACE
 #define MILLI_AMPS         1400 // IMPORTANT: set the max milli-Amps of your power supply (4A = 4000mA)
 #define FRAMES_PER_SECOND  240
 
+#define ARRAY_SIZE(A) (sizeof(A) / sizeof((A)[0]))
+
 CRGB leds[NUM_LEDS];
 
-uint8_t brightness = 64;
+uint8_t brightnesses[] = { 128, 64, 32, 16 };
+uint8_t currentBrightnessIndex = 1;
 
 Adafruit_FreeTouch touch0 = Adafruit_FreeTouch(A0, OVERSAMPLE_4, RESISTOR_0, FREQ_MODE_NONE);
 Adafruit_FreeTouch touch1 = Adafruit_FreeTouch(A1, OVERSAMPLE_4, RESISTOR_0, FREQ_MODE_NONE);
@@ -108,12 +111,12 @@ void setup() {
   FastLED.addLeds<LED_TYPE, DATA_PIN, COLOR_ORDER>(leds, NUM_LEDS);
   FastLED.setDither(true);
   FastLED.setCorrection(TypicalSMD5050);
-  FastLED.setBrightness(brightness);
+  FastLED.setBrightness(brightnesses[currentBrightnessIndex]);
   FastLED.setMaxPowerInVoltsAndMilliamps(5, MILLI_AMPS);
   fill_solid(leds, NUM_LEDS, CRGB::Black);
   FastLED.show();
 
-  FastLED.setBrightness(brightness);
+  FastLED.setBrightness(brightnesses[currentBrightnessIndex]);
 }
 
 void loop() {
@@ -126,10 +129,16 @@ void loop() {
     Serial.println("button 0 pressed");
     if (mode < modeCount - 1) mode++;
     else mode = 0;
+    Serial.print("mode: ");
+    Serial.println(mode);
   }
 
   if (button1.pressed()) {
     Serial.println("button 1 pressed");
+    currentBrightnessIndex = (currentBrightnessIndex + 1) % ARRAY_SIZE(brightnesses);
+    FastLED.setBrightness(brightnesses[currentBrightnessIndex]);
+    Serial.print("brightness: ");
+    Serial.println(brightnesses[currentBrightnessIndex]);
   }
 
   // change to a new cpt-city gradient palette
