@@ -38,7 +38,7 @@ FASTLED_USING_NAMESPACE
 CRGB leds[NUM_LEDS];
 
 uint8_t brightnesses[] = { 128, 64, 32, 16 };
-uint8_t currentBrightnessIndex = 1;
+uint8_t currentBrightnessIndex = 2;
 
 Adafruit_FreeTouch touch0 = Adafruit_FreeTouch(A0, OVERSAMPLE_4, RESISTOR_0, FREQ_MODE_NONE);
 Adafruit_FreeTouch touch1 = Adafruit_FreeTouch(A1, OVERSAMPLE_4, RESISTOR_0, FREQ_MODE_NONE);
@@ -68,7 +68,7 @@ uint8_t touch[touchPointCount] = { 0, 0, 0, 0, 0, 0 };
 
 // coordinates of the touch points
 uint8_t touchPointX[touchPointCount] = { 181, 74, 21, 74, 181, 234 };
-uint8_t touchPointY[touchPointCount] = { 24, 24, 128, 231, 231, 128 };
+uint8_t touchPointY[touchPointCount] = { 231, 231, 128, 24, 24, 128 };
 
 boolean activeWaves = false;
 
