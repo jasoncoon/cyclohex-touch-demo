@@ -2,7 +2,7 @@
 
 Demo Arduino firmware for CycloHex hexagonally-nested rings with 228 LEDs and six touch pads
 
-Available for purchase on Tindie here: [https://www.tindie.com/products/23597](https://www.tindie.com/products/23597)
+Available for purchase on Tindie here: [https://www.tindie.com/products/28120](https://www.tindie.com/products/28120)
 
 ![CycloHex](cyclohex.png)
 
