@@ -37,7 +37,7 @@ FASTLED_USING_NAMESPACE
 
 CRGB leds[NUM_LEDS];
 
-uint8_t brightnesses[] = { 128, 64, 32, 16 };
+uint8_t brightnesses[] = { 128, 96, 64, 32, 16 };
 uint8_t currentBrightnessIndex = 1;
 
 Adafruit_FreeTouch touch0 = Adafruit_FreeTouch(A0, OVERSAMPLE_4, RESISTOR_0, FREQ_MODE_NONE);
@@ -78,7 +78,7 @@ extern const TProgmemRGBGradientPalettePtr gGradientPalettes[];
 
 uint8_t gCurrentPaletteNumber = 0;
 
-CRGBPalette16 gCurrentPalette( CRGB::Black);
+CRGBPalette16 gCurrentPalette(gGradientPalettes[0]);
 CRGBPalette16 gTargetPalette( gGradientPalettes[0] );
 
 // ten seconds per color palette makes a good demo
